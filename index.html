@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maximum Property Price Calculator</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="calculator-wrapper">
+            <!-- Form Container -->
+            <div class="form-container">
+                <form id="maxPriceCalculatorForm">
+                    <!-- Property Details Section -->
+                    <section class="form-section" id="propertyDetails">
+                        <h2>Property Details</h2>
+                        <div class="form-group">
+                            <label>Property Type</label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="propertyType" value="private" checked required>
+                                    <span class="radio-text">Private Property</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="propertyType" value="hdb">
+                                    <span class="radio-text">HDB</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="propertyType" value="ecNewLaunch">
+                                    <span class="radio-text">EC New Launch</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Number of Borrowers</label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="borrowerCount" value="single" checked required>
+                                    <span class="radio-text">Single</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="borrowerCount" value="joint">
+                                    <span class="radio-text">Joint</span>
+                                </label>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Borrower 1 Details Section -->
+                    <section class="form-section" id="borrower1Details">
+                        <h2>Income Details</h2>
+                        <div class="form-group">
+                            <label>Residency Status</label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="borrower1ResidencyStatus" value="singaporean" checked required>
+                                    <span class="radio-text">Singaporean</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="borrower1ResidencyStatus" value="permanentResident">
+                                    <span class="radio-text">Permanent Resident</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="borrower1ResidencyStatus" value="foreigner">
+                                    <span class="radio-text">Foreigner</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="borrower1Age">Age</label>
+                            <div class="input-wrapper">
+                                <div class="input-icon">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <input type="number" id="borrower1Age" name="borrower1Age" 
+                                       min="21" max="65" required placeholder="Enter age" value="30">
+                            </div>
+                            <span class="error-message" id="borrower1AgeError"></span>
+                        </div>
+                        <div class="form-group">
+                            <label>Employment Status</label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="borrower1EmploymentStatus" value="employed" checked required>
+                                    <span class="radio-text">Employed</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="borrower1EmploymentStatus" value="selfEmployed">
+                                    <span class="radio-text">Self-Employed</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group" id="borrower1BasicSalaryGroup">
+                            <label for="borrower1BasicSalary">Basic Monthly Salary</label>
+                            <div class="input-wrapper">
+                                <div class="input-icon font-semibold text-primary">SGD</div>
+                                <input type="text" id="borrower1BasicSalary" name="borrower1BasicSalary" 
+                                       min="0" required placeholder="E.g 3,000" class="comma-input" value="3,000">
+                            </div>
+                            <span class="error-message" id="borrower1BasicSalaryError"></span>
+                        </div>
+                        <div class="form-group" id="borrower1NoaGroup">
+                            <label for="borrower1NOA" id="borrower1NoaLabel">Annual Bonus</label>
+                            <div class="input-wrapper">
+                                <div class="input-icon font-semibold text-primary">SGD</div>
+                                <input type="text" id="borrower1NOA" name="borrower1NOA" 
+                                       min="0" placeholder="E.g 10,000" class="comma-input" value="10,000">
+                            </div>
+                            <span class="error-message" id="borrower1NOAError"></span>
+                        </div>
+                        <div class="form-group">
+                            <label for="borrower1Commitments">Monthly Financial Commitments</label>
+                            <div class="input-wrapper">
+                                <div class="input-icon font-semibold text-primary">SGD</div>
+                                <input type="text" id="borrower1Commitments" name="borrower1Commitments" 
+                                       min="0" required placeholder="E.g 500" class="comma-input" value="500">
+                            </div>
+                            <span class="error-message" id="borrower1CommitmentsError"></span>
+                        </div>
+                    </section>
+
+                    <!-- Borrower 2 Details Section (Initially Hidden) -->
+                    <section class="form-section hidden" id="borrower2Details">
+                        <h2>Borrower 2's Income Details</h2>
+                        <div class="form-group">
+                            <label>Residency Status</label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="borrower2ResidencyStatus" value="singaporean" checked>
+                                    <span class="radio-text">Singaporean</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="borrower2ResidencyStatus" value="permanentResident">
+                                    <span class="radio-text">Permanent Resident</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="borrower2ResidencyStatus" value="foreigner">
+                                    <span class="radio-text">Foreigner</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="borrower2Age">Age</label>
+                            <div class="input-wrapper">
+                                <div class="input-icon">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <input type="number" id="borrower2Age" name="borrower2Age" 
+                                       min="21" max="65" placeholder="Enter age" value="25">
+                            </div>
+                            <span class="error-message" id="borrower2AgeError"></span>
+                        </div>
+                        <div class="form-group">
+                            <label>Employment Status</label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="borrower2EmploymentStatus" value="employed" checked>
+                                    <span class="radio-text">Employed</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="borrower2EmploymentStatus" value="selfEmployed">
+                                    <span class="radio-text">Self-Employed</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group" id="borrower2BasicSalaryGroup">
+                            <label for="borrower2BasicSalary">Basic Monthly Salary</label>
+                            <div class="input-wrapper">
+                                <div class="input-icon font-semibold text-primary">SGD</div>
+                                <input type="text" id="borrower2BasicSalary" name="borrower2BasicSalary" 
+                                       min="0" placeholder="E.g 0" class="comma-input" value="0">
+                            </div>
+                            <span class="error-message" id="borrower2BasicSalaryError"></span>
+                        </div>
+                        <div class="form-group" id="borrower2NoaGroup">
+                            <label for="borrower2NOA" id="borrower2NoaLabel">Annual Bonus</label>
+                            <div class="input-wrapper">
+                                <div class="input-icon font-semibold text-primary">SGD</div>
+                                <input type="text" id="borrower2NOA" name="borrower2NOA" 
+                                       min="0" placeholder="E.g 0" class="comma-input" value="0">
+                            </div>
+                            <span class="error-message" id="borrower2NOAError"></span>
+                        </div>
+                        <div class="form-group">
+                            <label for="borrower2Commitments">Monthly Financial Commitments</label>
+                            <div class="input-wrapper">
+                                <div class="input-icon font-semibold text-primary">SGD</div>
+                                <input type="text" id="borrower2Commitments" name="borrower2Commitments" 
+                                       min="0" placeholder="E.g 0" class="comma-input" value="0">
+                            </div>
+                            <span class="error-message" id="borrower2CommitmentsError"></span>
+                        </div>
+                    </section>
+
+                    <!-- Financial Position Section -->
+                    <section class="form-section" id="financialPosition">
+                        <h2>Financial Position</h2>
+                        <div class="form-group">
+                            <label for="cashOnHand">Available Cash on Hand</label>
+                            <div class="input-wrapper">
+                                <div class="input-icon font-semibold text-primary">SGD</div>
+                                <input type="text" id="cashOnHand" name="cashOnHand" 
+                                       min="0" required placeholder="E.g 50,000" class="comma-input" value="50,000">
+                            </div>
+                            <span class="error-message" id="cashOnHandError"></span>
+                        </div>
+                        <div class="form-group">
+                            <label for="cpfOA">Available CPF OA</label>
+                            <div class="input-wrapper">
+                                <div class="input-icon font-semibold text-primary">SGD</div>
+                                <input type="text" id="cpfOA" name="cpfOA" 
+                                       min="0" required placeholder="E.g 50,000" class="comma-input" value="50,000">
+                            </div>
+                            <span class="error-message" id="cpfOAError"></span>
+                        </div>
+                    </section>
+
+                    <!-- Calculate Button -->
+                    <button type="button" class="calculate-button" id="calculateButton">Calculate</button>
+                </form>
+            </div>
+
+            <!-- Refined Results Section HTML -->
+<div class="results-container" id="results">
+    <div class="results-header">
+        <h2>Maximum Property Price</h2>
+    </div>
+    
+    <div class="results-content">
+        <!-- Main result -->
+        <div class="result-main">
+            <div class="label">Maximum Property Price:</div>
+            <div class="value" id="maxPropertyPrice">-</div>
+        </div>
+        
+        <!-- Loan details -->
+        <div class="result-row">
+            <div class="label">Loan Amount (<span class="percentage" id="loanPercentage">75%</span>):</div>
+            <div class="value" id="loanAmount">-</div>
+        </div>
+        
+        <div class="result-row">
+            <div class="label">Minimum Cash Downpayment (<span class="percentage" id="cashPercentage">5%</span>):</div>
+            <div class="value" id="cashDownpayment">-</div>
+        </div>
+        
+        <div class="result-row">
+            <div class="label">CPF/Cash Downpayment (<span class="percentage" id="cpfPercentage">20%</span>):</div>
+            <div class="value" id="cpfDownpayment">-</div>
+        </div>
+        
+        <div class="result-row">
+            <div class="label">Balance Liquidity After Downpayment:</div>
+            <div class="value" id="balanceLiquidity">-</div>
+        </div>
+        
+        <!-- Divider -->
+        <div class="section-divider"></div>
+        
+        <!-- Breakdown section -->
+        <div class="breakdown-header">
+            <h3>Contribution Breakdown</h3>
+        </div>
+        
+        <div class="contribution-row">
+            <div class="label">Cash Contribution:</div>
+            <div class="value" id="cashContribution">-</div>
+        </div>
+        
+        <div class="contribution-row">
+            <div class="label">CPF Contribution:</div>
+            <div class="value" id="cpfContribution">-</div>
+        </div>
+        
+        <div class="contribution-row">
+            <div class="label">Loan Contribution:</div>
+            <div class="value" id="loanContribution">-</div>
+        </div>
+    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

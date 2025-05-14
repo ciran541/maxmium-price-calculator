@@ -1,0 +1,633 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Define CSS Variables */
+:root {
+    --primary-color: #052048;
+    --primary-hover: #0a326e;
+    --primary-light: rgba(5, 32, 72, 0.1);
+    --error-color: #dc2626;
+    --success-color: #16a34a;
+    --text-color: #1f2937;
+    --text-light: #6b7280;
+    --border-color: #e5e7eb;
+    --input-bg: #f9fafb;
+    --icon-bg: #052d4a;
+    --form-background: #ffffff;
+    --results-background: #ffffff;
+    --highlight-color: #1EA8E0;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --transition: all 0.3s ease;
+}
+
+/* Body and Container Styles (Unchanged) */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+        Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    color: var(--text-color);
+    background-color: var(--form-background);
+    line-height: 1.5;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.calculator-wrapper {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    margin-top: 1rem;
+}
+
+@media (min-width: 768px) {
+    .calculator-wrapper {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* Form Container and Section Styles */
+.form-container {
+    background-color: var(--form-background);
+    padding: 2rem 1.5rem;
+    transition: var(--transition);
+}
+
+.form-section {
+    margin-bottom: 3rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border-color);
+    position: relative;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.form-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.form-section.hidden {
+    display: none;
+}
+
+/* Headers (Updated for consistency) */
+.form-section h2 {
+    font-size: 1.5rem;
+    margin-bottom: 2rem;
+    color: var(--text-color);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.form-section h2::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, var(--border-color) 0%, transparent 100%);
+}
+
+/* Form Groups */
+.form-group {
+    margin-bottom: 1rem;
+    animation: slideIn 0.3s ease-out;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.75rem;
+    font-weight: 500;
+    color: var(--text-color);
+    font-size: 0.938rem;
+}
+
+/* Input Styles */
+.input-wrapper {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    position: relative;
+    transition: var(--transition);
+}
+
+.input-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    background-color: #f5f5f5;
+    color: #2b3674;
+    border: 1px solid #e0e0e0;
+    border-right: none;
+    border-radius: 0.5rem 0 0 0.5rem;
+    transition: var(--transition);
+    font-weight: 600;
+    padding: 8px 12px;
+    gap: 4px;
+}
+
+input[type="number"],
+input[type="text"] {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0 0.5rem 0.5rem 0;
+    font-size: 1rem;
+    transition: var(--transition);
+    color: var(--icon-bg);
+    font-weight: 500;
+}
+
+.input-wrapper:hover .input-icon,
+.input-wrapper:hover input {
+    border-color: var(--primary-color);
+}
+
+.input-wrapper:focus-within .input-icon {
+    background-color: var(--primary-light);
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+input[type="number"]:focus,
+input[type="text"]:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    background-color: white;
+    box-shadow: var(--shadow-sm);
+}
+
+/* Radio Button Groups */
+.radio-group {
+    display: flex;
+    flex-direction: row;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+    min-width: 100px;
+    max-width: fit-content;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    outline: none !important;
+    border: none !important;
+    background: transparent !important;
+}
+
+.radio-text {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.938rem;
+    color: var(--text-color);
+    transition: all 0.3s ease;
+}
+
+.radio-text::before {
+    content: '';
+    display: inline-block;
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid var(--border-color);
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    margin: 0;
+    padding: 0;
+    pointer-events: none;
+}
+
+input[type="radio"]:checked + .radio-text::before {
+    border-color: var(--primary-color);
+    background-color: var(--primary-color);
+    box-shadow: inset 0 0 0 3px white;
+}
+
+input[type="radio"]:checked ~ .radio-text {
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+/* Remove all focus and active states */
+.radio-label:focus,
+.radio-label:active,
+.radio-label:focus-within,
+input[type="radio"]:focus,
+input[type="radio"]:active {
+    outline: none !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: transparent !important;
+}
+
+/* Remove hover background */
+.radio-label:hover {
+    background: transparent !important;
+}
+
+/* Error States */
+.error-message {
+    display: none;
+    color: var(--error-color);
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    padding-left: 0.5rem;
+    border-left: 2px solid var(--error-color);
+}
+
+input.error {
+    border-color: var(--error-color);
+}
+
+input.error + .error-message {
+    display: block;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Responsive Design */
+@media screen and (max-width: 767px) {
+    .radio-group {
+        gap: 1rem;
+    }
+
+    .radio-label {
+        min-width: calc(50% - 0.5rem);
+    }
+
+    .form-container {
+        padding: 1.5rem;
+    }
+
+    .form-section {
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: none;
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .radio-group {
+        flex-direction: column;
+        gap: 0.05rem;
+    }
+
+    .radio-label {
+        min-width: 100%;
+        padding: 0.625rem 0.875rem;
+    }
+
+    .radio-text {
+        font-size: 0.875rem;
+    }
+
+    .input-icon {
+        width: 40px;
+    }
+
+    input[type="number"],
+    input[type="text"] {
+        padding: 0.75rem;
+        font-size: 0.938rem;
+    }
+}
+
+/* Focus States for Accessibility */
+input:focus-visible,
+.radio-label:focus-within {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* Refined Results Section CSS */
+.results-container {
+    background: white;
+    border-radius: 8px;
+    padding: 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+    border: none;
+}
+
+/* Header styles */
+.results-header {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 1.25rem 1.5rem;
+    border-radius: 8px 8px 0 0;
+    margin-bottom: 0;
+    border-bottom: none;
+}
+
+.results-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: white;
+    margin: 0;
+    letter-spacing: 0.01em;
+}
+
+/* Content section */
+.results-content {
+    margin-top: 0;
+    padding: 0;
+}
+
+/* Main result styling */
+.result-main {
+    background-color: #f8f9fa;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eaecef;
+}
+
+.result-main .label {
+    font-size: 1.125rem;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.result-main .value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+/* Result item styling */
+.result-row {
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eaecef;
+}
+
+.result-row:nth-child(even) {
+    background-color: #fafbfc;
+}
+
+.result-row .label {
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.result-row .value {
+    font-weight: 600;
+    color: var(--text-color);
+    text-align: right;
+}
+
+/* Percentage highlight */
+.percentage {
+    color: var(--highlight-color);
+    font-weight: 600;
+}
+
+/* Section divider */
+.section-divider {
+    height: 8px;
+    background-color: #f1f3f5;
+    border-top: 1px solid #eaecef;
+    border-bottom: 1px solid #eaecef;
+}
+
+/* Breakdown section header */
+.breakdown-header {
+    padding: 1rem 1.5rem;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #eaecef;
+}
+
+.breakdown-header h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin: 0;
+}
+
+/* Contribution row styling */
+.contribution-row {
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eaecef;
+}
+
+.contribution-row:last-child {
+    border-bottom: none;
+}
+
+.contribution-row:nth-child(even) {
+    background-color: #fafbfc;
+}
+
+.contribution-row .label {
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.contribution-row .value {
+    font-weight: 700;
+    color: var(--text-color);
+    text-align: right;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.contribution-row .value .amount {
+    color: var(--text-color);
+}
+
+.contribution-row .value .percentage {
+    color: var(--text-light);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+/* Loan contribution highlight */
+.contribution-row:last-child .value .amount {
+    color: var(--primary-color);
+}
+
+.contribution-row:last-child .value .percentage {
+    color: var(--primary-color);
+    opacity: 0.8;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+    .result-main, .result-row, .contribution-row {
+        padding: 0.875rem 1.25rem;
+    }
+    
+    .result-main .value {
+        font-size: 1.25rem;
+    }
+}
+
+.calculate-button {
+    background: var(--primary-color);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.375rem;
+    border: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    width: 100%;
+    max-width: 200px;
+    margin: 1rem auto;
+    display: block;
+    transition: var(--transition);
+}
+
+.calculate-button:hover {
+    background: var(--primary-hover);
+}
+
+
+.results-container {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+/* Add a subtle hover effect */
+.results-container:hover {
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+}
+
+/* Enhanced header */
+.results-header {
+    background: linear-gradient(to right, var(--primary-color), #0a3b7a);
+    position: relative;
+    overflow: hidden;
+}
+
+.results-header::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100px;
+    height: 100%;
+    background: linear-gradient(to left, rgba(255, 255, 255, 0.1), transparent);
+}
+
+/* Main result enhancements */
+.result-main {
+    background: linear-gradient(to right, #f8f9fa, #f1f3f7);
+    position: relative;
+}
+
+.result-main .value {
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+/* Result row hover effect */
+.result-row:hover, .contribution-row:hover {
+    background-color: #f0f4f8;
+}
+
+/* Better distinguish percentage values */
+.percentage {
+    position: relative;
+    padding: 1px 2px;
+    border-radius: 3px;
+}
+
+/* Make sure breakdown section stands out */
+.breakdown-header {
+    background: linear-gradient(to right, #f8f9fa, #f1f3f7);
+}
+
+.breakdown-header h3 {
+    position: relative;
+    display: inline-block;
+}
+
+.breakdown-header h3::after {
+    content: "";
+    display: block;
+    width: 40px;
+    height: 3px;
+    background-color: var(--highlight-color);
+    margin-top: 4px;
+}
+
+/* Add special styling for zero values */
+.zero-value {
+    color: #6c757d !important;
+    font-style: italic;
+}
+
+/* Loan contribution row highlight */
+.contribution-row:last-child {
+    background-color: rgba(5, 32, 72, 0.03);
+}
+
+/* Add animation for when values change */
+@keyframes highlight {
+    0% { background-color: rgba(52, 152, 219, 0.2); }
+    100% { background-color: transparent; }
+}
+
+.value-changed {
+    animation: highlight 1.5s ease;
+}
