@@ -303,40 +303,168 @@ class MaxPriceCalculator {
                 const tenure = this.calculateLoanTenure();
                 const cash = this.parseNumber(document.getElementById('cashOnHand').value) || 0;
                 const cpf = this.parseNumber(document.getElementById('cpfOA').value) || 0;
-
+                const totalLiquidity = cash + cpf;
+            
                 // Monthly Payment Capacity
                 const tdsrAvailable = Math.max(totalIncome * this.TDSR_LIMIT - totalCommitments, 0);
                 const msrAvailable = totalIncome * this.MSR_LIMIT;
                 const monthlyPayment = (propertyType === 'hdb' || propertyType === 'ecNewLaunch') ? 
                                       Math.min(tdsrAvailable, msrAvailable) : tdsrAvailable;
-
-                // Loan Eligibility
+            
+                // Loan Eligibility - this is the actual loan amount the borrower qualifies for
                 const months = tenure * 12;
-                const stressRate = this.STRESS_TEST_RATE / 12;
-                const loanEligibility = this.calculatePV(this.STRESS_TEST_RATE, months, monthlyPayment);
-
-                // Step 1: Calculate Max Price from Loan (Loan Eligibility is 75% of property price)
-                const priceFromLoan = loanEligibility / this.MAX_LOAN_PERCENTAGE;
-
-                // Step 2: Calculate Required Downpayment (25% of priceFromLoan)
-                const downpaymentRequired = priceFromLoan * (1 - this.MAX_LOAN_PERCENTAGE);
-
-                // Step 3: Calculate Balance Liquidity (Cash + CPF - Required Downpayment)
-                const balanceLiquidity = Math.max((cash + cpf) - downpaymentRequired, 0);
-
-                // Step 4: Final Max Property Price
-                const maxPropertyPrice = priceFromLoan + balanceLiquidity;
-
-                // Downpayment Breakdown (5% minimum cash, 20% CPF/cash)
-                const minCashDownpayment = priceFromLoan * this.MIN_CASH_PERCENTAGE;
-                const cpfCashDownpayment = priceFromLoan * this.CPF_CASH_PERCENTAGE;
-                const finalLoan = loanEligibility;
-
-                // Breakdown Percentages
-                const cashContribution = maxPropertyPrice > 0 ? (cash / maxPropertyPrice) * 100 : 0;
-                const cpfContribution = maxPropertyPrice > 0 ? (cpf / maxPropertyPrice) * 100 : 0;
-                const loanContribution = maxPropertyPrice > 0 ? (loanEligibility / maxPropertyPrice) * 100 : 0;
-
+                const actualLoanEligibility = this.calculatePV(this.STRESS_TEST_RATE, months, monthlyPayment);
+            
+                // Calculate maximum price based on all three limiting factors
+                
+                // 1. Loan-based maximum price (75% loan-to-value)
+                const priceFromLoan = actualLoanEligibility / this.MAX_LOAN_PERCENTAGE;
+                
+                // 2. Cash+CPF-based maximum price (25% downpayment requirement)
+                const maxPriceFromCashCPF = totalLiquidity / (1 - this.MAX_LOAN_PERCENTAGE); // Total liquidity / 25%
+                
+                // 3. Cash-only based maximum price (5% minimum cash requirement)
+                const maxPriceFromCashOnly = cash / this.MIN_CASH_PERCENTAGE; // Cash / 5%
+                
+                // Get the limiting factor and corresponding maximum price
+                const limitingFactors = [
+                    { name: 'loan', value: priceFromLoan },
+                    { name: 'cashCPF', value: maxPriceFromCashCPF },
+                    { name: 'cashOnly', value: maxPriceFromCashOnly }
+                ];
+                
+                // Find the lowest (limiting) value
+                const limitingFactor = limitingFactors.reduce((lowest, current) => 
+                    current.value < lowest.value ? current : lowest
+                );
+                
+                // Initialize variables for the calculation
+                let maxPropertyPrice, finalCash, finalCPF, finalLoan, balanceLiquidity = 0;
+                
+                // UPDATED LOGIC: When loan is the limiting factor, add balance liquidity to max price
+                if (limitingFactor.name === 'loan') {
+                    // Calculate how much downpayment is needed for the loan-limited price
+                    const minDownpayment = priceFromLoan * (1 - this.MAX_LOAN_PERCENTAGE);
+                    const minCashRequired = priceFromLoan * this.MIN_CASH_PERCENTAGE;
+                    
+                    // New rule: Calculate the total downpayment shown for display (5% + 20% of priceFromLoan)
+                    const displayDownpayment = priceFromLoan * (this.MIN_CASH_PERCENTAGE + this.CPF_CASH_PERCENTAGE);
+                    
+                    // Calculate excess liquidity based on the actual liquidity minus the display downpayment
+                    const excessLiquidity = totalLiquidity - displayDownpayment;
+                    
+                    // Store the excess liquidity value to display to the user 
+                    balanceLiquidity = excessLiquidity > 0 ? excessLiquidity : 0;
+                    
+                    if (excessLiquidity > 0) {
+                        // This is the maximum price including the excess liquidity
+                        maxPropertyPrice = priceFromLoan + (totalLiquidity - displayDownpayment);
+                        
+                        // Calculate contributions based on this new price
+                        finalLoan = actualLoanEligibility; // The loan amount doesn't change
+                        
+                        // New rule: For display purposes, calculate downpayments based on priceFromLoan (actual loan eligibility/75%)
+                        const displayCashDownpayment = priceFromLoan * this.MIN_CASH_PERCENTAGE;
+                        const displayCpfDownpayment = priceFromLoan * this.CPF_CASH_PERCENTAGE;
+                        
+                        // For actual contribution values, use the real values
+                        // We'll distribute the excess liquidity between cash and CPF proportionally based on available amounts
+                        if (cash >= displayCashDownpayment) {
+                            finalCash = displayCashDownpayment;
+                            // The rest goes to CPF or cash depending on availability
+                            const remainingCash = cash - displayCashDownpayment;
+                            const totalForRemaining = remainingCash + cpf;
+                            const remainingNeeded = maxPropertyPrice - finalLoan - displayCashDownpayment;
+                            
+                            if (totalForRemaining >= remainingNeeded) {
+                                // If we have enough to cover the rest
+                                if (cpf >= remainingNeeded) {
+                                    finalCPF = remainingNeeded;
+                                } else {
+                                    finalCPF = cpf;
+                                    finalCash += (remainingNeeded - cpf);
+                                }
+                            } else {
+                                // Not enough to cover (this shouldn't happen with our calculations but just in case)
+                                finalCPF = cpf;
+                                finalCash += remainingCash;
+                            }
+                        } else {
+                            // Not enough cash to cover the minimum
+                            finalCash = cash;
+                            finalCPF = Math.min(cpf, maxPropertyPrice - finalLoan - finalCash);
+                        }
+                        
+                        // Store the display values for the downpayment sections
+                        this.displayCashDownpayment = displayCashDownpayment;
+                        this.displayCpfDownpayment = displayCpfDownpayment;
+                    } else {
+                        // Original logic for loan limiting factor
+                        maxPropertyPrice = priceFromLoan;
+                        
+                        // New rule: For display purposes, calculate downpayments based on priceFromLoan
+                        this.displayCashDownpayment = priceFromLoan * this.MIN_CASH_PERCENTAGE;
+                        this.displayCpfDownpayment = priceFromLoan * this.CPF_CASH_PERCENTAGE;
+                        
+                        // For actual values used in calculations
+                        if (cash >= this.displayCashDownpayment) {
+                            finalCash = this.displayCashDownpayment;
+                            finalCPF = Math.min(cpf, maxPropertyPrice - finalLoan - finalCash);
+                        } else {
+                            finalCash = cash;
+                            finalCPF = Math.min(cpf, maxPropertyPrice - finalLoan - finalCash);
+                        }
+                        finalLoan = maxPropertyPrice * this.MAX_LOAN_PERCENTAGE;
+                    }
+                } 
+                else if (limitingFactor.name === 'cashCPF') {
+                    // Cash+CPF is limiting factor (25% of price)
+                    maxPropertyPrice = maxPriceFromCashCPF;
+                    // In this case, we don't enforce 5% minimum cash
+                    // Use available cash and CPF as they are
+                    finalCash = cash;
+                    finalCPF = cpf;
+                    // Loan would be the remainder up to the maximum price
+                    finalLoan = Math.min(maxPropertyPrice - finalCash - finalCPF, actualLoanEligibility);
+                    balanceLiquidity = 0; // All liquidity is used
+                    
+                    // For other limiting factors, display values are the same as calculated values
+                    this.displayCashDownpayment = finalCash;
+                    this.displayCpfDownpayment = finalCPF;
+                } 
+                else {
+                    // Cash is limiting factor (5% of price)
+                    maxPropertyPrice = maxPriceFromCashOnly;
+                    finalCash = cash;
+                    finalCPF = cpf;
+                    // Loan would be the remainder up to the maximum price
+                    finalLoan = Math.min(maxPropertyPrice - finalCash - finalCPF, actualLoanEligibility);
+                    balanceLiquidity = 0; // All liquidity is used
+                    
+                    // For other limiting factors, display values are the same as calculated values
+                    this.displayCashDownpayment = finalCash;
+                    this.displayCpfDownpayment = finalCPF;
+                }
+                
+                // Calculate percentages of contribution
+                const cashPercentage = (finalCash / maxPropertyPrice) * 100;
+                const cpfPercentage = (finalCPF / maxPropertyPrice) * 100;
+                const loanPercentage = (finalLoan / maxPropertyPrice) * 100;
+                
+                // Prepare explanation text
+                let limitingFactorText = "";
+                if (limitingFactor.name === 'loan') {
+                    if (balanceLiquidity > 0) {
+                        limitingFactorText = "Loan Eligibility";
+                    } else {
+                        limitingFactorText = "Loan Eligibility";
+                    }
+                } else if (limitingFactor.name === 'cashCPF') {
+                    limitingFactorText = "Cash + CPF";
+                } else {
+                    limitingFactorText = "Cash";
+                }
+                
                 // Update Results
                 const formatCurrency = (value) => `SGD ${Math.round(value).toLocaleString()}`;
                 const formatPercentage = (value) => `${Math.round(value * 100)}%`;
@@ -345,18 +473,38 @@ class MaxPriceCalculator {
                     const formattedPercentage = `${value.toFixed(2)}%`;
                     return `<span class="amount">${formattedAmount}</span><span class="percentage">(${formattedPercentage})</span>`;
                 };
-
+                
                 document.getElementById('maxPropertyPrice').textContent = formatCurrency(maxPropertyPrice);
                 document.getElementById('loanAmount').textContent = formatCurrency(finalLoan);
-                document.getElementById('loanPercentage').textContent = formatPercentage(this.MAX_LOAN_PERCENTAGE);
-                document.getElementById('cashDownpayment').textContent = formatCurrency(minCashDownpayment);
-                document.getElementById('cashPercentage').textContent = formatPercentage(this.MIN_CASH_PERCENTAGE);
-                document.getElementById('cpfDownpayment').textContent = formatCurrency(cpfCashDownpayment);
-                document.getElementById('cpfPercentage').textContent = formatPercentage(this.CPF_CASH_PERCENTAGE);
+                
+                document.getElementById('cashDownpayment').textContent = formatCurrency(this.displayCashDownpayment);
+                document.getElementById('cpfDownpayment').textContent = formatCurrency(this.displayCpfDownpayment);
                 document.getElementById('balanceLiquidity').textContent = formatCurrency(balanceLiquidity);
-                document.getElementById('cashContribution').innerHTML = formatContribution(cashContribution, cash);
-                document.getElementById('cpfContribution').innerHTML = formatContribution(cpfContribution, cpf);
-                document.getElementById('loanContribution').innerHTML = formatContribution(loanContribution, loanEligibility);
+                
+                // Add label for balance liquidity to make it clear
+                const balanceLiquidityLabel = document.getElementById('balanceLiquidityLabel');
+                if (balanceLiquidityLabel) {
+                    if (limitingFactor.name === 'loan' && balanceLiquidity > 0) {
+                        balanceLiquidityLabel.textContent = "Balance Liquidity after 25% (5%+20%) downpayment:";
+                    } else {
+                        balanceLiquidityLabel.textContent = "Balance Liquidity:";
+                    }
+                }
+                document.getElementById('cashContribution').innerHTML = formatContribution(cashPercentage, finalCash);
+                document.getElementById('cpfContribution').innerHTML = formatContribution(cpfPercentage, finalCPF);
+                document.getElementById('loanContribution').innerHTML = formatContribution(loanPercentage, finalLoan);
+                
+                // Display actual loan eligibility for reference
+                if (document.getElementById('actualLoanEligibility')) {
+                    document.getElementById('actualLoanEligibility').textContent = formatCurrency(actualLoanEligibility);
+                }
+                
+                // Display the limiting factor explanation
+                if (document.getElementById('limitingFactor')) {
+                    document.getElementById('limitingFactor').textContent = limitingFactorText;
+                } else {
+                    console.log(limitingFactorText); // Log it if there's no UI element
+                }
             }
         }
 
