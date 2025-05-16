@@ -436,15 +436,34 @@ class MaxPriceCalculator {
             // Cash is limiting factor (5% of price)
             maxPropertyPrice = maxPriceFromCashOnly;
             
-            // FIXED: Calculate exact amounts based on standard percentages
-            // Cash should be 5% of property price
-            finalCash = maxPropertyPrice * this.MIN_CASH_PERCENTAGE;
+            // Calculate what the property price would be with all available cash and CPF
+            finalCash = cash;
+            finalCPF = cpf;
             
-            // CPF should be at most 20% of property price, but limited by available CPF
-            finalCPF = Math.min(cpf, maxPropertyPrice * this.CPF_CASH_PERCENTAGE);
+            // Calculate the total property value if we used all cash and CPF plus maximum loan
+            const totalMaximumPrice = finalCash + finalCPF + actualLoanEligibility;
             
-            // Loan should be at most 75% of property price, and limited by loan eligibility
-            finalLoan = Math.min(maxPropertyPrice * this.MAX_LOAN_PERCENTAGE, actualLoanEligibility);
+            // Check if this total is less than the cash-limited maximum price
+            if (totalMaximumPrice < maxPropertyPrice) {
+                // Case where not enough total funding is available
+                // We need to reduce property price to what's actually affordable
+                maxPropertyPrice = totalMaximumPrice;
+                finalLoan = actualLoanEligibility;
+            } else {
+                // Normal case - enough funding available
+                // Loan is just what's needed after cash and CPF
+                finalLoan = maxPropertyPrice - finalCash - finalCPF;
+                
+                // Check if the loan is negative, which means we have too much cash+CPF
+                if (finalLoan < 0) {
+                    // Apply the strict regulatory percentages
+                    const regulatedMaxPrice = maxPriceFromCashOnly;
+                    finalCash = regulatedMaxPrice * this.MIN_CASH_PERCENTAGE;
+                    finalCPF = Math.min(cpf, regulatedMaxPrice * this.CPF_CASH_PERCENTAGE);
+                    finalLoan = Math.min(regulatedMaxPrice * this.MAX_LOAN_PERCENTAGE, actualLoanEligibility);
+                    maxPropertyPrice = finalCash + finalCPF + finalLoan;
+                }
+            }
             
             balanceLiquidity = 0; // All liquidity is used
             
