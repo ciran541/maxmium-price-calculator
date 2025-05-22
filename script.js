@@ -160,14 +160,12 @@ class MaxPriceCalculator {
     }
 
     initializeEventListeners() {
-        // Borrower Count
         document.querySelectorAll('input[name="borrowerCount"]').forEach(radio => {
             radio.addEventListener('change', () => {
                 this.toggleBorrower2Fields();
             });
         });
 
-        // Employment Status
         ['borrower1', 'borrower2'].forEach(borrower => {
             document.querySelectorAll(`input[name="${borrower}EmploymentStatus"]`).forEach(radio => {
                 radio.addEventListener('change', (e) => {
@@ -177,7 +175,6 @@ class MaxPriceCalculator {
             });
         });
 
-        // Input Validation
         this.form.querySelectorAll('input').forEach(input => {
             input.addEventListener('focus', () => {
                 this.touchedFields.add(input.id);
@@ -193,7 +190,6 @@ class MaxPriceCalculator {
             });
         });
 
-        // Calculate Button
         this.calculateButton.addEventListener('click', () => {
             if (this.validateForm()) {
                 this.calculateMaxPrice();
@@ -285,6 +281,13 @@ class MaxPriceCalculator {
                 isValid = false;
             }
         });
+        // Validate Foreigner restriction for HDB/EC
+        const propertyType = document.querySelector('input[name="propertyType"]:checked').value;
+        const highestResidency = this.getHighestABSDRate();
+        if ((propertyType === 'hdb' || propertyType === 'ecNewLaunch') && highestResidency === 'Foreigner') {
+            alert('Foreigners are not eligible for HDB or EC properties.');
+            isValid = false;
+        }
         return isValid;
     }
 
@@ -386,68 +389,162 @@ class MaxPriceCalculator {
         // Loan Eligibility
         const months = tenure * 12;
         const actualLoanEligibility = this.calculatePV(this.STRESS_TEST_RATE, months, monthlyPayment);
+        const priceFromLoan = actualLoanEligibility / this.MAX_LOAN_PERCENTAGE;
 
-        // Calculate initial limiting factors for stamp duty estimation
-        const initialPriceFromLoan = actualLoanEligibility / this.MAX_LOAN_PERCENTAGE;
-        const initialMaxPriceFromCashCPF = totalLiquidity / (1 - this.MAX_LOAN_PERCENTAGE);
-        const initialMaxPriceFromCashOnly = cash / this.MIN_CASH_PERCENTAGE;
-
-        const initialLimitingFactors = [
-            { name: 'loan', value: initialPriceFromLoan },
-            { name: 'cashCPF', value: initialMaxPriceFromCashCPF },
-            { name: 'cashOnly', value: initialMaxPriceFromCashOnly }
-        ];
-        const initialLimitingFactor = initialLimitingFactors.reduce((lowest, current) => 
-            current.value < lowest.value ? current : lowest
-        );
-        const initialMaxPrice = initialLimitingFactor.value;
-
-        // Calculate BSD and ABSD
-        const bsd = this.calculateBSD(initialMaxPrice);
-        const highestResidency = this.getHighestABSDRate();
-        const absd = this.calculateABSD(initialMaxPrice, highestResidency);
-        const totalStampDuty = bsd + absd;
-
-        // Adjust cash and CPF based on property type
-        let adjustedCash = cash;
-        let adjustedCPF = cpf;
         const canUseCpfForStampDuty = this.PROPERTY_TYPES[propertyType].canUseCpfForStampDuty;
+        const highestResidency = this.getHighestABSDRate();
+        const absdRate = highestResidency === 'Foreigner' ? 0.60 : highestResidency === 'PR' ? 0.05 : 0;
 
-        if (canUseCpfForStampDuty) {
-            // For HDB, Private New Launch, EC New Launch: Use CPF for stamp duty
-            if (cpf >= totalStampDuty) {
-                adjustedCPF = cpf - totalStampDuty;
+        // Calculate maximum price affordable by liquidity (stamp duty + downpayment)
+        let maxPriceByLiquidity = 0;
+        const maxStampDuty = canUseCpfForStampDuty ? totalLiquidity : cash;
+        // Solve: price + BSD(price) + absdRate * price + 0.25 * price ≤ cash + cpf
+        // Approximate BSD as 4% for high prices
+        const totalMultiplier = 1 + absdRate + 0.04 + (canUseCpfForStampDuty ? 0.25 : 0.25);
+        maxPriceByLiquidity = totalLiquidity / totalMultiplier;
+        // Refine with binary search for stamp duty only
+        let low = 0;
+        let high = maxPriceByLiquidity * 2;
+        for (let i = 0; i < 15; i++) {
+            const mid = (low + high) / 2;
+            const bsd = this.calculateBSD(mid);
+            const absd = this.calculateABSD(mid, highestResidency);
+            const totalStampDuty = bsd + absd;
+            if (totalStampDuty <= maxStampDuty) {
+                maxPriceByLiquidity = mid;
+                low = mid;
             } else {
-                adjustedCPF = 0;
-                adjustedCash = cash - (totalStampDuty - cpf);
+                high = mid;
             }
-        } else {
-            // For Private Completed: Use cash only for stamp duty
-            adjustedCash = cash - totalStampDuty;
+            if (high - low < 1) break;
         }
 
-        // Ensure adjusted values are non-negative
-        adjustedCash = Math.max(adjustedCash, 0);
-        adjustedCPF = Math.max(adjustedCPF, 0);
+        // Binary search for feasible price including downpayment
+        let maxPropertyPrice = 0;
+        let adjustedCash = cash;
+        let adjustedCPF = cpf;
+        let bsd = 0;
+        let absd = 0;
+        let totalStampDuty = 0;
+        let limitingFactor = { name: 'none', value: Infinity };
+
+        // Initial limiting factors
+        const initialMaxPriceFromCashCPF = totalLiquidity / (1 - this.MAX_LOAN_PERCENTAGE);
+        const initialMaxPriceFromCashOnly = cash / this.MIN_CASH_PERCENTAGE;
+        low = 0;
+        high = Math.min(priceFromLoan, initialMaxPriceFromCashCPF, initialMaxPriceFromCashOnly, maxPriceByLiquidity * 2);
+        let feasiblePrice = high;
+
+        for (let iteration = 0; iteration < 20; iteration++) {
+            const currentPrice = (low + high) / 2;
+            if (currentPrice <= 0) break;
+
+            // Calculate stamp duties
+            bsd = this.calculateBSD(currentPrice);
+            absd = this.calculateABSD(currentPrice, highestResidency);
+            totalStampDuty = bsd + absd;
+
+            // Adjust cash/CPF
+            adjustedCash = cash;
+            adjustedCPF = cpf;
+            if (canUseCpfForStampDuty) {
+                if (cpf >= totalStampDuty) {
+                    adjustedCPF = cpf - totalStampDuty;
+                } else {
+                    adjustedCPF = 0;
+                    adjustedCash = cash - (totalStampDuty - cpf);
+                }
+            } else {
+                adjustedCash = cash - totalStampDuty;
+            }
+            adjustedCash = Math.max(adjustedCash, 0);
+            adjustedCPF = Math.max(adjustedCPF, 0);
+            const adjustedTotalLiquidity = adjustedCash + adjustedCPF;
+
+            // Recalculate limiting factors
+            const maxPriceFromCashCPF = adjustedTotalLiquidity / (1 - this.MAX_LOAN_PERCENTAGE);
+            const maxPriceFromCashOnly = adjustedCash / this.MIN_CASH_PERCENTAGE;
+            const limitingFactors = [
+                { name: 'loan', value: priceFromLoan },
+                { name: 'cashCPF', value: maxPriceFromCashCPF },
+                { name: 'cashOnly', value: maxPriceFromCashOnly }
+            ];
+            limitingFactor = limitingFactors.reduce((lowest, current) => 
+                current.value < lowest.value ? current : lowest
+            );
+            maxPropertyPrice = limitingFactor.value;
+
+            // Check feasibility
+            const requiredCash = currentPrice * this.MIN_CASH_PERCENTAGE;
+            const requiredDownpayment = currentPrice * (1 - this.MAX_LOAN_PERCENTAGE);
+            if (adjustedCash >= requiredCash && adjustedTotalLiquidity >= requiredDownpayment && maxPropertyPrice >= currentPrice) {
+                feasiblePrice = currentPrice;
+                low = currentPrice;
+            } else {
+                high = currentPrice;
+            }
+            if (high - low < 1) break;
+        }
+
+        maxPropertyPrice = Math.round(feasiblePrice);
+        if (maxPropertyPrice <= 0) {
+            maxPropertyPrice = 0;
+            adjustedCash = cash;
+            adjustedCPF = cpf;
+            bsd = 0;
+            absd = 0;
+            totalStampDuty = 0;
+        } else {
+            // Final stamp duty calculation
+            bsd = this.calculateBSD(maxPropertyPrice);
+            absd = this.calculateABSD(maxPropertyPrice, highestResidency);
+            totalStampDuty = bsd + absd;
+
+            // Final adjustment of cash/CPF
+            adjustedCash = cash;
+            adjustedCPF = cpf;
+            if (canUseCpfForStampDuty) {
+                if (cpf >= totalStampDuty) {
+                    adjustedCPF = cpf - totalStampDuty;
+                } else {
+                    adjustedCPF = 0;
+                    adjustedCash = cash - (totalStampDuty - cpf);
+                }
+            } else {
+                adjustedCash = cash - totalStampDuty;
+            }
+            adjustedCash = Math.max(adjustedCash, 0);
+            adjustedCPF = Math.max(adjustedCPF, 0);
+        }
+
+        // Final limiting factors
         const adjustedTotalLiquidity = adjustedCash + adjustedCPF;
-
-        // Recalculate limiting factors with adjusted cash and CPF
-        const priceFromLoan = actualLoanEligibility / this.MAX_LOAN_PERCENTAGE;
-        const maxPriceFromCashCPF = adjustedTotalLiquidity / (1 - this.MAX_LOAN_PERCENTAGE); // (new cash + new CPF) / 25%
-        const maxPriceFromCashOnly = adjustedCash / this.MIN_CASH_PERCENTAGE; // new cash / 5%
-
+        const maxPriceFromCashCPF = adjustedTotalLiquidity / (1 - this.MAX_LOAN_PERCENTAGE);
+        const maxPriceFromCashOnly = adjustedCash / this.MIN_CASH_PERCENTAGE;
         const limitingFactors = [
             { name: 'loan', value: priceFromLoan },
             { name: 'cashCPF', value: maxPriceFromCashCPF },
             { name: 'cashOnly', value: maxPriceFromCashOnly }
         ];
-        const limitingFactor = limitingFactors.reduce((lowest, current) => 
+        limitingFactor = limitingFactors.reduce((lowest, current) => 
             current.value < lowest.value ? current : lowest
         );
+        maxPropertyPrice = Math.min(maxPropertyPrice, limitingFactor.value);
 
-        let maxPropertyPrice, finalCash, finalCPF, finalLoan, balanceLiquidity = 0;
+        let finalCash = 0;
+        let finalCPF = 0;
+        let finalLoan = 0;
+        let balanceLiquidity = 0;
 
-        if (limitingFactor.name === 'loan') {
+        if (maxPropertyPrice === 0) {
+            finalCash = 0;
+            finalCPF = 0;
+            finalLoan = 0;
+            balanceLiquidity = adjustedTotalLiquidity;
+            this.displayCashDownpayment = 0;
+            this.displayCpfDownpayment = 0;
+            limitingFactor = { name: 'none', value: 0 };
+        } else if (limitingFactor.name === 'loan') {
             const minDownpayment = priceFromLoan * (1 - this.MAX_LOAN_PERCENTAGE);
             const minCashRequired = priceFromLoan * this.MIN_CASH_PERCENTAGE;
             const displayDownpayment = priceFromLoan * (this.MIN_CASH_PERCENTAGE + this.CPF_CASH_PERCENTAGE);
@@ -551,13 +648,15 @@ class MaxPriceCalculator {
         finalLoan = Math.max(finalLoan, 0);
 
         // Calculate percentages of contribution
-        const cashPercentage = (finalCash / maxPropertyPrice) * 100;
-        const cpfPercentage = (finalCPF / maxPropertyPrice) * 100;
-        const loanPercentage = (finalLoan / maxPropertyPrice) * 100;
+        const cashPercentage = maxPropertyPrice > 0 ? (finalCash / maxPropertyPrice) * 100 : 0;
+        const cpfPercentage = maxPropertyPrice > 0 ? (finalCPF / maxPropertyPrice) * 100 : 0;
+        const loanPercentage = maxPropertyPrice > 0 ? (finalLoan / maxPropertyPrice) * 100 : 0;
 
         // Prepare explanation text
         let limitingFactorText = "";
-        if (limitingFactor.name === 'loan') {
+        if (maxPropertyPrice === 0) {
+            limitingFactorText = "Insufficient Cash/CPF for Stamp Duty";
+        } else if (limitingFactor.name === 'loan') {
             if (cashPercentage < this.MIN_CASH_PERCENTAGE * 100) {
                 limitingFactorText = "Cash (5% minimum)";
             } else {
