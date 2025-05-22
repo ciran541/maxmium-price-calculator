@@ -21,8 +21,12 @@
                             <label>Property Type</label>
                             <div class="radio-group">
                                 <label class="radio-label">
-                                    <input type="radio" name="propertyType" value="private" checked required>
-                                    <span class="radio-text">Private Property</span>
+                                    <input type="radio" name="propertyType" value="privateCompleted" checked required>
+                                    <span class="radio-text">Private (Completed)</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="propertyType" value="privateNewLaunch">
+                                    <span class="radio-text">Private New Launch</span>
                                 </label>
                                 <label class="radio-label">
                                     <input type="radio" name="propertyType" value="hdb">
@@ -223,74 +227,73 @@
                 </form>
             </div>
 
-            <!-- Refined Results Section HTML -->
-<div class="results-container" id="results">
-    <div class="results-header">
-        <h2>Maximum Property Price</h2>
-    </div>
-    
-    <div class="results-content">
-        <!-- Main result -->
-        <div class="result-main">
-            <div class="label">Maximum Property Price:</div>
-            <div class="value" id="maxPropertyPrice">-</div>
-        </div>
-        
-        <!-- Loan details -->
-        <div class="result-row">
-            <div class="label">Loan Amount:</div>
-            <div class="value" id="loanAmount">-</div>
-        </div>
-        
-        <div class="result-row">
-            <div class="label">Minimum Cash Downpayment:</div>
-            <div class="value" id="cashDownpayment">-</div>
-        </div>
-        
-        <div class="result-row">
-            <div class="label">CPF/Cash Downpayment:</div>
-            <div class="value" id="cpfDownpayment">-</div>
-        </div>
-        
-        <div class="result-row">
-            <div class="label">Balance Liquidity After Downpayment:</div>
-            <div class="value" id="balanceLiquidity">-</div>
-        </div>
-        
-        <div class="result-row">
-            <div class="label">Actual Loan Eligibility (Based on Income):</div>
-            <div class="value" id="actualLoanEligibility">-</div>
-        </div>
-        
-        <div class="result-row">
-            <div class="label">Limiting Factor:</div>
-            <div class="value" id="limitingFactor">-</div>
-        </div>
-        
-        <!-- Divider -->
-        <div class="section-divider"></div>
-        
-        <!-- Breakdown section -->
-        <div class="breakdown-header">
-            <h3>Contribution Breakdown</h3>
-        </div>
-        
-        <div class="contribution-row">
-            <div class="label">Cash Contribution:</div>
-            <div class="value" id="cashContribution">-</div>
-        </div>
-        
-        <div class="contribution-row">
-            <div class="label">CPF Contribution:</div>
-            <div class="value" id="cpfContribution">-</div>
-        </div>
-        
-        <div class="contribution-row">
-            <div class="label">Loan Contribution:</div>
-            <div class="value" id="loanContribution">-</div>
-        </div>
-    </div>
-
+            <!-- Updated Results Section -->
+            <div class="results-container" id="results">
+                <div class="results-header">
+                    <h2>Maximum Property Price</h2>
+                </div>
+                <div class="results-content">
+                    <!-- Main result -->
+                    <div class="result-main">
+                        <div class="label">Maximum Property Price:</div>
+                        <div class="value" id="maxPropertyPrice">-</div>
+                    </div>
+                    <!-- Loan details -->
+                    <div class="result-row">
+                        <div class="label">Loan Amount:</div>
+                        <div class="value" id="loanAmount">-</div>
+                    </div>
+                    <div class="result-row">
+                        <div class="label">Minimum Cash Downpayment:</div>
+                        <div class="value" id="cashDownpayment">-</div>
+                    </div>
+                    <div class="result-row">
+                        <div class="label">CPF/Cash Downpayment:</div>
+                        <div class="value" id="cpfDownpayment">-</div>
+                    </div>
+                    <div class="result-row">
+                        <div class="label" id="balanceLiquidityLabel">Balance Liquidity After Downpayment:</div>
+                        <div class="value" id="balanceLiquidity">-</div>
+                    </div>
+                    <div class="result-row">
+                        <div class="label">Actual Loan Eligibility (Based on Income):</div>
+                        <div class="value" id="actualLoanEligibility">-</div>
+                    </div>
+                    <div class="result-row">
+                        <div class="label">Limiting Factor:</div>
+                        <div class="value" id="limitingFactor">-</div>
+                    </div>
+                    <!-- Stamp Duty Details -->
+                    <div class="result-row">
+                        <div class="label">Buyer’s Stamp Duty (BSD):</div>
+                        <div class="value" id="bsdAmount">-</div>
+                    </div>
+                    <div class="result-row">
+                        <div class="label">Additional Buyer’s Stamp Duty (ABSD):</div>
+                        <div class="value" id="absdAmount">-</div>
+                    </div>
+                    <div class="result-row">
+                        <div class="label">Total Stamp Duty:</div>
+                        <div class="value" id="totalStampDuty">-</div>
+                    </div>
+                    <!-- Divider -->
+                    <div class="section-divider"></div>
+                    <!-- Breakdown section -->
+                    <div class="breakdown-header">
+                        <h3>Contribution Breakdown</h3>
+                    </div>
+                    <div class="contribution-row">
+                        <div class="label">Cash Contribution:</div>
+                        <div class="value" id="cashContribution">-</div>
+                    </div>
+                    <div class="contribution-row">
+                        <div class="label">CPF Contribution:</div>
+                        <div class="value" id="cpfContribution">-</div>
+                    </div>
+                    <div class="contribution-row">
+                        <div class="label">Loan Contribution:</div>
+                        <div class="value" id="loanContribution">-</div>
+                    </div>
                 </div>
             </div>
         </div>
